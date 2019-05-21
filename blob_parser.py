@@ -3,14 +3,7 @@ import xml.etree.ElementTree as ET
 
 LUT_SET = set()
 FF_SET = set()
-
-
-def all_devices_io(xml_node, iodict, current_clb, current_kernel, current_ble, current_lut_or_ff):
-    if "mode" in xml_node.attrib:
-        if xml_node.attrib["mode"] == "clb":
-            iodict[xml_node.attrib["mode"]]["input"] = (xml_node[0][0].text).split()
-            for child in xml_node:
-                all_devices_io()
+IN_EDGE_LIST = dict()
 
 
 def add_nodes_recursive(graph, xml_node, placement_dict, current_clb):
@@ -53,6 +46,102 @@ def add_nodes_recursive(graph, xml_node, placement_dict, current_clb):
             add_nodes_recursive(graph, child_node, placement_dict, current_clb)
 
 
+def return_out_end(xml_node, edge_from):
+    if "mode" in xml_node.attrib and (xml_node.attrib["mode"] == "lut" or xml_node.attrib["mode"] == "ff"):
+        return xml_node.attrib["name"]
+    else:
+        for sub_xml_block in range(len(xml_node)):  # get into component
+            if "instance" in xml_node[sub_xml_block].attrib and xml_node[sub_xml_block].attrib["instance"] == edge_from[0]:  # are we in, say, kernel[3]?
+                edge_from_in_component = xml_node[sub_xml_block][1][0].text.split()[int(edge_from[1][edge_from[1].find("[")+1:edge_from[1].find("]")])].split("->")[0].split(".")
+                return return_out_end(xml_node[sub_xml_block],edge_from_in_component)
+
+
+def edge_construction(xml_node, IN_EDGE_LIST, graph):
+    # print(str(xml_node))
+    if "mode" in xml_node.attrib:
+        # print("mode exists")
+        current_mode = xml_node.attrib["mode"]
+        if current_mode == "lut" or current_mode == "ff":
+            node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
+            current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
+            print("At lut or ff "+str(xml_node.attrib["name"]))
+            if current_coordinates not in IN_EDGE_LIST: IN_EDGE_LIST[current_coordinates] = dict()
+            if xml_node.attrib["name"] not in IN_EDGE_LIST[current_coordinates]: IN_EDGE_LIST[current_coordinates][xml_node.attrib["name"]] = list()
+            for element in xml_node[0][0].text.split(" "):
+                if element != "open":
+                    IN_EDGE_LIST[current_coordinates][xml_node.attrib["name"]].append(element.split("->")[0])
+            print(str(xml_node.attrib["name"])+" "+str(IN_EDGE_LIST[current_coordinates][xml_node.attrib["name"]])+" is the lut/ff we are exiting")
+            print("Out of lut or ff")
+            return IN_EDGE_LIST
+        elif current_mode == "ble":
+            if xml_node.attrib["name"] == "open":
+                return IN_EDGE_LIST
+            node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
+            current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
+            print("At ble " + str(xml_node.attrib["name"]))
+            for child in xml_node:
+                edge_construction(child, IN_EDGE_LIST, graph)
+            for u in IN_EDGE_LIST[current_coordinates]:
+                in_edges_u = IN_EDGE_LIST[current_coordinates][u]
+                print(str(u) + " : " + str(in_edges_u))
+                for v in range(len(in_edges_u)):
+                    if in_edges_u[v] == "open":
+                        continue
+                    if in_edges_u[v].find(".") != -1:
+                        edge_from = in_edges_u[v].split(".")
+                        if edge_from[0] == "ble":
+                            IN_EDGE_LIST[current_coordinates][u][v] = xml_node[0][0].text.split()[int(edge_from[1][edge_from[1].find("[") + 1:edge_from[1].find("]")])].split("->")[0]
+                        elif edge_from[0][:6] != "kernel" and edge_from[0][:3] != "clb" and edge_from[0][:4] != "ble[":
+                            IN_EDGE_LIST[current_coordinates][u][v] = return_out_end(xml_node, edge_from)
+            print("Out of ble")
+            return IN_EDGE_LIST
+        elif current_mode == "kernel":
+            node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
+            current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
+            print("At kernel " + str(xml_node.attrib["name"]))
+            for child in xml_node:
+                edge_construction(child, IN_EDGE_LIST, graph)
+            for u in IN_EDGE_LIST[current_coordinates]:
+                in_edges_u = IN_EDGE_LIST[current_coordinates][u]
+                print(str(u) + " : " + str(in_edges_u))
+                for v in range(len(in_edges_u)):
+                    if in_edges_u[v] == "open":
+                        continue
+                    if in_edges_u[v].find(".") != -1:
+                        edge_from = in_edges_u[v].split(".")
+                        if edge_from[0] == "kernel":
+                            IN_EDGE_LIST[current_coordinates][u][v] = xml_node[0][0].text.split()[
+                                int(edge_from[1][edge_from[1].find("[") + 1:edge_from[1].find("]")])].split("->")[0]
+                        elif edge_from[0][:3] != "clb" and edge_from[0][:7] != "kernel[":
+                            IN_EDGE_LIST[current_coordinates][u][v] = return_out_end(xml_node, edge_from)
+            print("Out of kernel")
+            return IN_EDGE_LIST
+        elif current_mode == "clb":
+            node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
+            current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
+            print("At clb" + str(xml_node.attrib["name"]))
+            for child in xml_node:
+                edge_construction(child,IN_EDGE_LIST,graph)  # updated dict
+            for u in IN_EDGE_LIST[current_coordinates]:
+                in_edges_u = IN_EDGE_LIST[current_coordinates][u]
+                print(str(u)+" : "+str(in_edges_u))
+                for v in range(len(in_edges_u)):
+                    if in_edges_u[v] == "open":
+                        continue
+                    edge_from = in_edges_u[v].split(".")
+                    if edge_from[0] == "clb":
+                        assert edge_from[1][:2] == "I["
+                        IN_EDGE_LIST[current_coordinates][u][v] = xml_node[0][0].text.split()[int(edge_from[1][edge_from[1].find("[")+1:edge_from[1].find("]")])]
+                    else:
+                        assert edge_from[0][:7] == "kernel["
+                        IN_EDGE_LIST[current_coordinates][u][v] = return_out_end(xml_node, edge_from)
+            print("Done with clb")
+            return IN_EDGE_LIST
+    else:
+        # print("mode doesn't exist, bro do you even deep")
+        for child in xml_node:
+            IN_EDGE_LIST= edge_construction(child, IN_EDGE_LIST, graph)
+        return IN_EDGE_LIST
 G = nx.DiGraph()
 net_tree = ET.parse('blob_merge_prepacked.net')
 net_root = net_tree.getroot()
@@ -83,6 +172,9 @@ for node in G.nodes:
     print(str(node)+" "+str(G.nodes[node]))
 
 # Adding edges:
+print("\nStarting edge construction")
+IN_EDGE_LIST = edge_construction(net_root, IN_EDGE_LIST, G)
+print(IN_EDGE_LIST)
 
 for edge in G.edges:
     edge['weight'] = 8.5
