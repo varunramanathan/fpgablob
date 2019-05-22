@@ -176,9 +176,18 @@ for node in G.nodes:
 # Adding edges:
 print("\nStarting edge construction")
 in_edge_list = edge_construction(net_root, dict(), G)
-print("IN_EDGE_LIST "+str(in_edge_list))
+# print("IN_EDGE_LIST "+str(in_edge_list))
+print("\n###############\nedges: ")
+for coord in in_edge_list:
+    # print("coord is "+str(coord))
+    for v in in_edge_list[coord]:
+        for u in in_edge_list[coord][v]:
+            # print(str(u)+" "+str(v))
+            if u != "open" and v != open:
+                G.add_edge(u, v, weight=8.5)
+print("no of edges: "+str(len(G.edges)))
+# for edge in G.edges:
+#
+#     print(str(edge) + " " + str(G.edges[edge]))
 
-for edge in G.edges:
-    edge['weight'] = 8.5
-    print(str(edge) + " " + str(G.edges[edge]))
 
