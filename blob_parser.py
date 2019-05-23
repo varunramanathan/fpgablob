@@ -247,7 +247,9 @@ for i in range(len(longest_path) - 3):
     for x in range(left, right):
         for y in range(bottom, top):
             #             try x,y as new coordinates
-            update_edges_to_from_u(G, v2, x, y)
+            changing_vertices = [node for node in in_edge_list[old_coordinates]]
+            for u in changing_vertices:
+                update_edges_to_from_u(G, u, x, y)
             longest_path_new = nx.dag_longest_path(G)
             new_longest_length = nx.dag_longest_path_length(G)
             if length_longest > new_longest_length:
@@ -256,6 +258,8 @@ for i in range(len(longest_path) - 3):
                 new_d = distance(G, v1, v2) + distance(G, v2, v3)
                 print(" new sum of taxicab distances is " + str(new_d))
                 print("longest path length changes from " + str(length_longest) + " to " + str(new_longest_length))
-            update_edges_to_from_u(G, v2, old_coordinates[0], old_coordinates[1])
+
+            for u in changing_vertices:
+                update_edges_to_from_u(G, u, old_coordinates[0], old_coordinates[1])
 
 print("no of edges: " + str(len(G.edges)))
