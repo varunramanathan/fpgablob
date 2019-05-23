@@ -6,6 +6,10 @@ LUT_SET = set()
 FF_SET = set()
 
 
+def manhattan_distance(p1,p2):
+    return abs(p1[0]-p2[0]) + abs(p1[1]-p2[1])
+
+
 def add_nodes_recursive(graph, xml_node, placement_dict, current_clb):
     """
     Checks whether xml_node has 'mode' attribute as 'ble'. If yes, it creates a node in G
@@ -46,7 +50,7 @@ def add_nodes_recursive(graph, xml_node, placement_dict, current_clb):
             add_nodes_recursive(graph, child_node, placement_dict, current_clb)
 
 
-def distance(graph, u, v):
+def distance_in_graph(graph, u, v):
     x1 = graph.nodes[u]['x']
     y1 = graph.nodes[u]['y']
     x2 = graph.nodes[v]['x']
@@ -165,9 +169,9 @@ def update_edges_to_from_u(graph, u, new_x, new_y):
     graph.nodes[u]['x'] = new_x
     graph.nodes[u]['y'] = new_y
     for vertex in graph[u]:
-        graph.add_edge(u, vertex, weight=distance(graph, u, vertex))
-    for vertex in nx.DiGraph.predecessors(G, u):
-        G.add_edge(vertex, u, weight=distance(graph, vertex, u))
+        graph.add_edge(u, vertex, weight=distance_in_graph(graph, u, vertex))
+    for vertex in nx.DiGraph.predecessors(graph, u):
+        graph.add_edge(vertex, u, weight=distance_in_graph(graph, vertex, u))
 
 
 length1 = 27  # 0 to 26
@@ -210,7 +214,7 @@ print("Graph G size is " + str(len(G.nodes)))
 print("\nStarting edge construction")
 in_edge_list = edge_construction(net_root, dict(), G)
 print("IN_EDGE_LIST " + str(in_edge_list))
-print("\n###############\nedges: ")
+print("\n###############\n")
 for coord in in_edge_list:
     # print("coord is "+str(coord))
     for v in in_edge_list[coord]:
@@ -218,7 +222,7 @@ for coord in in_edge_list:
             # print(str(u)+" "+str(v))
             # forbidden = {'open', 'top^iReset'}
             if u in G.nodes and v in G.nodes:
-                G.add_edge(u, v, weight=distance(G, u, v))
+                G.add_edge(u, v, weight=distance_in_graph(G, u, v))
 
 # Remove flip-flops with in-edges as well as out-edges
 for edge in G.edges:
@@ -228,16 +232,22 @@ for edge in G.edges:
 # print("Graph G size is "+str(len(G.nodes)))
 
 longest_path = nx.dag_longest_path(G)
-print(longest_path)
+print("Longest path in original graph is "+str(longest_path))
+for v in longest_path:
+    print(str(G.nodes[v]['x'])+" "+str(G.nodes[v]['y']))
 length_longest = nx.dag_longest_path_length(G)
-print(length_longest)
+print("longest path has length "+str(length_longest)+" with "+str(len(longest_path))+" nodes.")
 for i in range(len(longest_path) - 3):
     v1 = longest_path[i]
     v2 = longest_path[i + 1]
     v3 = longest_path[i + 2]
+    print("I am starting to move: "+str(v1)+" "+str(v2)+" "+str(v3))
     # condition to check whether we want to do the new graph or not
     # if yes:
-    d = distance(G, v1, v2) + distance(G, v2, v3)
+    d = distance_in_graph(G, v1, v2) + distance_in_graph(G, v2, v3)
+    print("v1 v2 are at distance "+str(distance_in_graph(G, v1, v2)))
+    print("v3 v2 are at distance "+str(distance_in_graph(G, v2, v3)))
+
     left = max(min(G.nodes[v1]['x'] - d, G.nodes[v3]['x'] - d), 0)
     right = min(max(G.nodes[v1]['x'] + d, G.nodes[v3]['x'] + d), length1)
     bottom = max(min(G.nodes[v1]['y'] - d, G.nodes[v3]['y'] - d), 0)
@@ -246,20 +256,38 @@ for i in range(len(longest_path) - 3):
     print(str((top-bottom)*(right-left))+" is the total number of points we check")
     for x in range(left, right):
         for y in range(bottom, top):
-            #             try x,y as new coordinates
-            changing_vertices = [node for node in in_edge_list[old_coordinates]]
+            #             try x,y as new coordinates if new sum of distances is smaller
+            new_v1v2 = abs(G.nodes[v1]['x']-x) + abs(G.nodes[v1]['y']-y) + 8
+            new_v2v3 = abs(G.nodes[v3]['x']-x) + abs(G.nodes[v3]['y']-y) + 8
+            if new_v1v2+new_v2v3 >= d:
+                continue
+            changing_vertices = [node for node in in_edge_list[old_coordinates] if node != v2]
+            G.nodes[v2]['x'] = x
+            G.nodes[v2]['y'] = y
+            G.add_edge(v1, v2, weight=distance_in_graph(G, v1, v2))
+            G.add_edge(v2, v3, weight=distance_in_graph(G, v2, v3))
+            # changing_vertices = [node for node in in_edge_list[old_coordinates]]
+            # G.edges[]
             for u in changing_vertices:
                 update_edges_to_from_u(G, u, x, y)
             longest_path_new = nx.dag_longest_path(G)
             new_longest_length = nx.dag_longest_path_length(G)
             if length_longest > new_longest_length:
                 print("FOUND A BETTER CONNECTION")
-                print("Change " + str(v2) + " from " + str(old_coordinates) + " to " + str((x, y)))
-                new_d = distance(G, v1, v2) + distance(G, v2, v3)
-                print(" new sum of taxicab distances is " + str(new_d))
-                print("longest path length changes from " + str(length_longest) + " to " + str(new_longest_length))
+                print("Change all nodes from the cluster in " + str(old_coordinates) + " to " + str((x, y)))
+                new_d = distance_in_graph(G, v1, v2) + distance_in_graph(G, v2, v3)
+                print("For our triplet, the sum of taxicab distances changed from " + str(d) + " to "+str(new_d)+" [which should be the same as "+str(new_v2v3+new_v1v2)+"]. ")
+                print("new longest path has length " + str(new_longest_length) + " with " + str(len(longest_path_new)) + " nodes.")
+                print("New longest path is : " + str(longest_path_new))
+                if longest_path_new != longest_path:
+                    print("NEW LONGEST PATH IS DIFFERENT!")
 
+            print("\n###############\n")
             for u in changing_vertices:
                 update_edges_to_from_u(G, u, old_coordinates[0], old_coordinates[1])
+            G.nodes[v2]['x'] = old_coordinates[0]
+            G.nodes[v2]['y'] = old_coordinates[1]
+            G.add_edge(v1, v2, weight=distance_in_graph(G, v1, v2))
+            G.add_edge(v2, v3, weight=distance_in_graph(G, v2, v3))
 
 print("no of edges: " + str(len(G.edges)))
