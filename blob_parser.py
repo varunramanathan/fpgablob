@@ -9,6 +9,36 @@ def manhattan_distance(p1, p2):
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
 
+def add_nodes_recursive_multiplyer(graph, xml_node, placement_dict, current_clb):
+    not_open = xml_node.attrib["name"] != "open"
+    child_exists = False
+    for child in xml_node:
+        if child.tag == "block" and child.attrib["instance"][4] == "mult":
+            add_nodes_recursive_multiplyer(graph,child,placement_dict, current_clb)
+            child_exists = True
+    if not child_exists and not_open:
+        node_name = xml_node.attrib['name']
+        graph.add_node(xml_node.attrib['name'])
+        graph.nodes[node_name]['x'] = int(placement_dict[current_clb][0])
+        graph.nodes[node_name]['y'] = int(placement_dict[current_clb][1])
+        graph.nodes[node_name]['subblk'] = int(placement_dict[current_clb][2])
+        graph.nodes[node_name]['block number'] = int(placement_dict[current_clb][3][1:])
+
+
+def add_nodes_recursive_memory(graph, xml_node, placement_dict, current_clb):
+    not_open = xml_node.attrib["name"] != "open"
+    if not_open and xml_node.attrib["instance"][13] == "memory_slice[":
+        node_name = xml_node.attrib['name']
+        graph.add_node(xml_node.attrib['name'])
+        graph.nodes[node_name]['x'] = int(placement_dict[current_clb][0])
+        graph.nodes[node_name]['y'] = int(placement_dict[current_clb][1])
+        graph.nodes[node_name]['subblk'] = int(placement_dict[current_clb][2])
+        graph.nodes[node_name]['block number'] = int(placement_dict[current_clb][3][1:])
+    else:
+        for child in xml_node:
+            add_nodes_recursive_memory(graph, child, placement_dict, current_clb)
+
+
 def add_nodes_recursive(graph, xml_node, placement_dict, current_clb):
     """
     Checks whether xml_node has 'mode' attribute as 'ble'. If yes, it creates a node in G
@@ -19,7 +49,11 @@ def add_nodes_recursive(graph, xml_node, placement_dict, current_clb):
     :param graph: DiGraph to which we will add ble elements of the circuit as nodes and connections as edges
     :param xml_node: the current node in the xml tree
     """
-    if "mode" in xml_node.attrib and xml_node.attrib["mode"] == "ble":
+    if "instance" in xml_node.attrib and xml_node.attrib["instance"][4] == "mult":
+        add_nodes_recursive_multiplyer(graph, xml_node, placement_dict,  xml_node.attrib["name"])
+    elif "instance" in xml_node.attrib and xml_node.attrib["instance"][3] == "mem":
+        add_nodes_recursive_memory(graph, xml_node, placement_dict, xml_node.attrib["name"])
+    elif "mode" in xml_node.attrib and xml_node.attrib["mode"] == "ble":
         for child in xml_node:
             name_exists = "name" in child.attrib and current_clb in placement_dict
             if name_exists:
@@ -45,6 +79,7 @@ def add_nodes_recursive(graph, xml_node, placement_dict, current_clb):
     else:
         if 'mode' in xml_node.attrib and xml_node.attrib['mode'] == "clb":
             current_clb = xml_node.attrib['name']
+
         for child_node in xml_node:
             add_nodes_recursive(graph, child_node, placement_dict, current_clb)
 
@@ -69,9 +104,48 @@ def return_out_end(xml_node, edge_from):
                 return return_out_end(xml_node[sub_xml_block], edge_from_in_component)
 
 
+def edge_construction_multiplyer(xml_node, in_edge_list, graph):
+    instance_breakdown = xml_node.attrib["instance"].split("_")
+    if len(instance_breakdown) == 3:
+        pass
+    else:
+        if instance_breakdown[1].find("x") != -1:
+            node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
+            current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
+            # print("At lut or ff "+str(xml_node.attrib["name"]))
+            if current_coordinates not in in_edge_list: in_edge_list[current_coordinates] = dict()
+            if xml_node.attrib["name"] not in in_edge_list[current_coordinates]: in_edge_list[current_coordinates][
+                xml_node.attrib["name"]] = list()
+            for element in xml_node[0][0].text.split(" "):
+                if element != "open":
+                    in_edge_list[current_coordinates][xml_node.attrib["name"]].append(element.split("->")[0])
+        else:
+
+    pass
+
+#
+# def edge_construction_memory(xml_node, in_edge_list, graph):
+#     not_open = xml_node.attrib["name"] != "open"
+#     if not_open and xml_node.attrib["instance"][13] == "memory_slice[":
+#         node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
+#         current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
+#         # print("At lut or ff "+str(xml_node.attrib["name"]))
+#         if current_coordinates not in in_edge_list: in_edge_list[current_coordinates] = dict()
+#         if xml_node.attrib["name"] not in in_edge_list[current_coordinates]: in_edge_list[current_coordinates][
+#             xml_node.attrib["name"]] = list()
+#         for element in xml_node[0][0].text.split(" "):
+#             if element != "open":
+#                 in_edge_list[current_coordinates][xml_node.attrib["name"]].append(element.split("->")[0])
+#     pass
+
+
 def edge_construction(xml_node, in_edge_list, graph):
     # print(str(xml_node))
-    if "mode" in xml_node.attrib:
+    if "instance" in xml_node.attrib and xml_node.attrib["instance"][4] == "mult":
+        edge_construction_multiplyer(xml_node,in_edge_list,graph)
+    elif "instance" in xml_node.attrib and xml_node.attrib["instance"][3] == "mem":
+        print("Ignored memory "+xml_node.attrib["name"])
+    elif "mode" in xml_node.attrib:
         # print("mode exists")
         current_mode = xml_node.attrib["mode"]
         if current_mode == "lut" or current_mode == "ff":
@@ -285,7 +359,7 @@ def blob_parser(net_file,place_file):
                     if longest_path_new != longest_path:
                         print("NEW LONGEST PATH IS DIFFERENT!")
 
-                print("\n###############\n")
+                print("\nCompleted "+str((x,y))+"\n###############\n")
                 for u in changing_vertices:
                     update_edges_to_from_u(G, u, old_coordinates[0], old_coordinates[1])
                 G.nodes[v2]['x'] = old_coordinates[0]
