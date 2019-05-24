@@ -120,7 +120,7 @@ def edge_construction_multiplyer(xml_node, in_edge_list, graph):
                 if element != "open":
                     in_edge_list[current_coordinates][xml_node.attrib["name"]].append(element.split("->")[0])
         else:
-
+            pass
     pass
 
 #
