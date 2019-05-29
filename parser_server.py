@@ -263,8 +263,8 @@ def edge_construction(xml_node, in_edge_list, graph):
             # print("At ble " + str(xml_node.attrib["name"]))
             for child in xml_node:
                 print("Looking at "+str(child)+" with attrib "+str(child.attrib),file=sys.__stdout__)
-                if "name" in child.attrib and child.attrib["name"] in graph.nodes:
-                    print("child coordinates: "+str((graph.nodes[child.attrib["name"]]['x'],graph.nodes[child.attrib["name"]]['y'])))
+                # if "name" in child.attrib and child.attrib["name"] in graph.nodes:
+                    # print("child coordinates: "+str((graph.nodes[child.attrib["name"]]['x'],graph.nodes[child.attrib["name"]]['y'])))
                 in_edge_list = edge_construction(child, in_edge_list, graph)
             for u in in_edge_list[current_coordinates]:
                 in_edges_u = in_edge_list[current_coordinates][u]
@@ -472,4 +472,7 @@ def blob_parser(net_file,place_file):
 
 
 if __name__ == '__main__':
-    blob_parser('/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.net','/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.place')
+    if len(sys.argv)==3:
+        blob_parser(sys.argv[1],sys.argv[2])
+    else:
+        blob_parser('/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.net','/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.place')
