@@ -41,6 +41,7 @@ for root,d_names,f_names in os.walk(all_files):
                 result_file = open(os.path.join(os.path.dirname(fname[-1]),filename_array[0]+".results"),"w+")
                 sys.stdout = result_file
                 blob_parser.blob_parser(complete_net_filename,complete_place_filename)
+                result_file.close()
     # f.writelines("\n")
     # f.writelines(d_names)
     # f.writelines("\n")
