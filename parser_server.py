@@ -29,7 +29,7 @@ def add_nodes_recursive_multiplyer(graph, xml_node, placement_dict, current_clb)
 
 
 def add_nodes_recursive_memory(graph, xml_node, placement_dict, current_clb):
-    print(str(xml_node)+" "+str(xml_node.attrib),file=sys.__stdout__)
+    # print(str(xml_node)+" "+str(xml_node.attrib),file=sys.__stdout__)
     name_exists = 'name' in xml_node.attrib
     if name_exists:
         not_open = xml_node.attrib['name'] != "open"
@@ -146,7 +146,7 @@ def edge_construction_multiplier(xml_node, in_edge_list, graph):
         # print("At lut or ff "+str(xml_node.attrib["name"]))
         if current_coordinates not in in_edge_list:
             in_edge_list[current_coordinates] = dict()
-            print("Just added " + str(current_coordinates), file=sys.__stdout__)
+            # print("Just added " + str(current_coordinates), file=sys.__stdout__)
         if xml_node.attrib["name"] not in in_edge_list[current_coordinates]:
             in_edge_list[current_coordinates][xml_node.attrib["name"]] = dict()
             in_edge_list[current_coordinates][xml_node.attrib["name"]]['a'] = list()
@@ -217,16 +217,16 @@ def edge_construction(xml_node, in_edge_list, graph):
     if "instance" in xml_node.attrib and xml_node.attrib["instance"][:4] == "mult":
         return edge_construction_multiplier(xml_node, in_edge_list, graph)
     elif "instance" in xml_node.attrib and xml_node.attrib["instance"][:3] == "mem":
-        print("Ignored memory "+xml_node.attrib["name"],file=sys.__stdout__)
+        # print("Ignored memory "+xml_node.attrib["name"],file=sys.__stdout__)
         return in_edge_list
     elif "instance" in xml_node.attrib and xml_node.attrib["instance"][:2] == "ff":
         node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
         current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
-        print("    " + str(current_coordinates) + " in lut/ff", file=sys.__stdout__)
+        # print("    " + str(current_coordinates) + " in lut/ff", file=sys.__stdout__)
         # print("At lut or ff "+str(xml_node.attrib["name"]))
         if current_coordinates not in in_edge_list:
             in_edge_list[current_coordinates] = dict()
-            print("Just added " + str(current_coordinates), file=sys.__stdout__)
+            # print("Just added " + str(current_coordinates), file=sys.__stdout__)
         if xml_node.attrib["name"] not in in_edge_list[current_coordinates]: in_edge_list[current_coordinates][
             xml_node.attrib["name"]] = list()
         for element in xml_node[0][0].text.split(" "):
@@ -241,11 +241,11 @@ def edge_construction(xml_node, in_edge_list, graph):
         if current_mode == "lut" or current_mode == "ff":
             node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
             current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
-            print("    "+str(current_coordinates)+" in lut/ff",file=sys.__stdout__)
+            # print("    "+str(current_coordinates)+" in lut/ff",file=sys.__stdout__)
             # print("At lut or ff "+str(xml_node.attrib["name"]))
             if current_coordinates not in in_edge_list:
                 in_edge_list[current_coordinates] = dict()
-                print("Just added "+str(current_coordinates),file=sys.__stdout__)
+                # print("Just added "+str(current_coordinates),file=sys.__stdout__)
             if xml_node.attrib["name"] not in in_edge_list[current_coordinates]: in_edge_list[current_coordinates][
                 xml_node.attrib["name"]] = list()
             for element in xml_node[0][0].text.split(" "):
@@ -259,10 +259,10 @@ def edge_construction(xml_node, in_edge_list, graph):
                 return in_edge_list
             node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
             current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
-            print("   "+str(current_coordinates)+" in ble",file=sys.__stdout__)
+            # print("   "+str(current_coordinates)+" in ble",file=sys.__stdout__)
             # print("At ble " + str(xml_node.attrib["name"]))
             for child in xml_node:
-                print("Looking at "+str(child)+" with attrib "+str(child.attrib),file=sys.__stdout__)
+                # print("Looking at "+str(child)+" with attrib "+str(child.attrib),file=sys.__stdout__)
                 # if "name" in child.attrib and child.attrib["name"] in graph.nodes:
                     # print("child coordinates: "+str((graph.nodes[child.attrib["name"]]['x'],graph.nodes[child.attrib["name"]]['y'])))
                 in_edge_list = edge_construction(child, in_edge_list, graph)
@@ -286,7 +286,7 @@ def edge_construction(xml_node, in_edge_list, graph):
                 node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
                 current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
                 # print("At kernel " + str(xml_node.attrib["name"]))
-                print("  " + str(current_coordinates) + " in kernel",file=sys.__stdout__)
+                # print("  " + str(current_coordinates) + " in kernel",file=sys.__stdout__)
                 for child in xml_node:
                     in_edge_list = edge_construction(child, in_edge_list, graph)
                 for u in in_edge_list[current_coordinates]:
@@ -307,7 +307,7 @@ def edge_construction(xml_node, in_edge_list, graph):
         elif current_mode == "clb":
             node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
             current_coordinates = (node_element_in_graph["x"], node_element_in_graph["y"])
-            print(" " + str(current_coordinates) + " in clb",file=sys.__stdout__)
+            # print(" " + str(current_coordinates) + " in clb",file=sys.__stdout__)
             # print("At clb" + str(xml_node.attrib["name"]))
             for child in xml_node:
                 in_edge_list = edge_construction(child, in_edge_list, graph)  # updated dict
