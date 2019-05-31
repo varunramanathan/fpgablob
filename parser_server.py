@@ -346,7 +346,9 @@ def update_edges_to_from_u(graph, u, new_x, new_y):
         graph.add_edge(vertex, u, weight=distance_in_graph(graph, vertex, u))
 
 
-def blob_parser(net_file,place_file):
+def blob_parser(write_file,net_file,place_file):
+    write_fd = open(write_file,"a+")
+    sys.stdout = write_fd
     length1 = 27  # 0 to 26
     length2 = 27
     G = nx.DiGraph()
@@ -469,10 +471,12 @@ def blob_parser(net_file,place_file):
                 G.add_edge(v2, v3, weight=distance_in_graph(G, v2, v3))
 
     print("no of edges: " + str(len(G.edges)))
+    write_fd.close()
+    sys.stdout = sys.__stdout__
 
 
 if __name__ == '__main__':
-    if len(sys.argv)==3:
-        blob_parser(sys.argv[1],sys.argv[2])
+    if len(sys.argv)==4:
+        blob_parser(sys.argv[1],sys.argv[2],sys.argv[3])
     else:
         blob_parser('/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.net','/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.place')
