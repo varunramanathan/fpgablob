@@ -435,8 +435,12 @@ def blob_parser(write_file,net_file,place_file):
         for x in range(left, right):
             for y in range(bottom, top):
                 #             try x,y as new coordinates if new sum of distances is smaller
-                new_v1v2 = abs(G.nodes[v1]['x'] - x) + abs(G.nodes[v1]['y'] - y) + 8
-                new_v2v3 = abs(G.nodes[v3]['x'] - x) + abs(G.nodes[v3]['y'] - y) + 8
+                extra_delay_v1 = 8
+                extra_delay_v2 = 8
+                if 'type' in G.nodes[v1] and G.nodes[v1]['type'] == "mult": extra_delay_v1 = 85
+                if 'type' in G.nodes[v2] and G.nodes[v2]['type'] == "mult": extra_delay_v2 = 85
+                new_v1v2 = abs(G.nodes[v1]['x'] - x) + abs(G.nodes[v1]['y'] - y) + extra_delay_v1
+                new_v2v3 = abs(G.nodes[v3]['x'] - x) + abs(G.nodes[v3]['y'] - y) + extra_delay_v2
                 if new_v1v2 + new_v2v3 >= d:
                     continue
                 changing_vertices = [node for node in in_edge_list[old_coordinates] if node != v2 and node in G.nodes]
