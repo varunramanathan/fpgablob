@@ -119,6 +119,10 @@ def return_out_end(xml_node, edge_from):
                 edge_from_in_component = xml_node[sub_xml_block][1][0].text.split()[
                     int(edge_from[1][edge_from[1].find("[") + 1:edge_from[1].find("]")])].split("->")[0].split(".")
                 return return_out_end(xml_node[sub_xml_block], edge_from_in_component)
+        for sub_xml_block in range(len(xml_node)):
+            result = return_out_end(xml_node[sub_xml_block],edge_from)
+            if result is not None:
+                return result
 
 
 def return_out_end_multiplier(xml_node, edge_from):
@@ -134,6 +138,9 @@ def return_out_end_multiplier(xml_node, edge_from):
 
 
 def edge_construction_multiplier(xml_node, in_edge_list, graph):
+    # if "name" in xml_node.attrib and xml_node.attrib["name"] == "n5228":
+    #     print("")
+    #     pass
     # instance_breakdown = xml_node.attrib["instance"].split("_")
     last_level = False
     for child in xml_node:
@@ -158,6 +165,8 @@ def edge_construction_multiplier(xml_node, in_edge_list, graph):
             if element != "open":
                 in_edge_list[current_coordinates][xml_node.attrib["name"]]['a'].append(element.split("->")[0])
     else:
+        # if xml_node.attrib["name"] == "n5228":
+        #     pass
         if xml_node.attrib["name"] == "open":
             return in_edge_list
         node_element_in_graph = graph.nodes[xml_node.attrib["name"]]
@@ -209,6 +218,9 @@ def edge_construction_multiplier(xml_node, in_edge_list, graph):
 
 
 def edge_construction(xml_node, in_edge_list, graph):
+    # if "name" in xml_node.attrib and xml_node.attrib["name"] == "n5228":
+    #     print("")
+    #     pass
     # print(str(xml_node))
     # if "name" in xml_node.attrib and xml_node.attrib['name'] == "top.wrapper_norm_corr_20+wrapper_norm_corr_20_inst_n.wrapper_norm+norm_inst_left^FF_NODE~4577":
     #     print("LOL",file=sys.__stdout__)
@@ -266,6 +278,8 @@ def edge_construction(xml_node, in_edge_list, graph):
                 # if "name" in child.attrib and child.attrib["name"] in graph.nodes:
                     # print("child coordinates: "+str((graph.nodes[child.attrib["name"]]['x'],graph.nodes[child.attrib["name"]]['y'])))
                 in_edge_list = edge_construction(child, in_edge_list, graph)
+            # if xml_node.attrib["name"] == "n5228":
+            #     pass
             for u in in_edge_list[current_coordinates]:
                 in_edges_u = in_edge_list[current_coordinates][u]
                 # print(str(u) + " : " + str(in_edges_u))
@@ -289,6 +303,9 @@ def edge_construction(xml_node, in_edge_list, graph):
                 # print("  " + str(current_coordinates) + " in kernel",file=sys.__stdout__)
                 for child in xml_node:
                     in_edge_list = edge_construction(child, in_edge_list, graph)
+                # if xml_node.attrib["name"] == "n5228":
+                #     print("Here I am.")
+                #     pass
                 for u in in_edge_list[current_coordinates]:
                     in_edges_u = in_edge_list[current_coordinates][u]
                     # print(str(u) + " : " + str(in_edges_u))
@@ -297,9 +314,13 @@ def edge_construction(xml_node, in_edge_list, graph):
                             continue
                         if in_edges_u[v].find(".") != -1:
                             edge_from = in_edges_u[v].split(".")
+                            # if xml_node.attrib["name"]=="n5228":
+                            #     pass
                             if edge_from[0] == "kernel":
                                 in_edge_list[current_coordinates][u][v] = xml_node[0][0].text.split()[
                                     int(edge_from[1][edge_from[1].find("[") + 1:edge_from[1].find("]")])].split("->")[0]
+                            elif edge_from[0][:4] == "ble[":
+                                in_edge_list[current_coordinates][u][v] = return_out_end(xml_node, edge_from)
                             elif edge_from[0].find("[") != -1 and edge_from[0][:3] != "clb" and edge_from[0][:7] != "kernel[":
                                 in_edge_list[current_coordinates][u][v] = return_out_end(xml_node, edge_from)
                 # print("Out of kernel")
@@ -311,6 +332,8 @@ def edge_construction(xml_node, in_edge_list, graph):
             # print("At clb" + str(xml_node.attrib["name"]))
             for child in xml_node:
                 in_edge_list = edge_construction(child, in_edge_list, graph)  # updated dict
+            # if xml_node.attrib["name"] == "n5228":
+            #     pass
             for u in in_edge_list[current_coordinates]:
                 in_edges_u = in_edge_list[current_coordinates][u]
                 # print(str(u)+" : "+str(in_edges_u))
@@ -324,7 +347,7 @@ def edge_construction(xml_node, in_edge_list, graph):
                         assert edge_from[1][:2] == "I["
                         in_edge_list[current_coordinates][u][v] = xml_node[0][0].text.split()[
                             int(edge_from[1][edge_from[1].find("[") + 1:edge_from[1].find("]")])]
-                    elif edge_from[0][:7] == "kernel[":
+                    elif edge_from[0][:7] == "kernel[" or edge_from[0].find("[")>-1:
                         in_edge_list[current_coordinates][u][v] = return_out_end(xml_node, edge_from)
             # print("Done with clb")
             # print("Printing IN_EDGE_LIST: ")
@@ -346,9 +369,16 @@ def update_edges_to_from_u(graph, u, new_x, new_y):
         graph.add_edge(vertex, u, weight=distance_in_graph(graph, vertex, u))
 
 
+def blob_parser_default(net_file, place_file):
+    sys.stderr = sys.__stderr__
+    blob_parser("parser_server_output.txt",net_file,place_file)
+
+
 def blob_parser(write_file,net_file,place_file):
-    write_fd = open(write_file,"a+")
+    write_fd = open(write_file, "a+")
+    write_fd = sys.__stdout__
     sys.stdout = write_fd
+    sys.stderr = sys.__stderr__
     length1 = 27  # 0 to 26
     length2 = 27
     G = nx.DiGraph()
@@ -408,7 +438,14 @@ def blob_parser(write_file,net_file,place_file):
     for node in ff_to_remove:
         G.remove_node(node)
     # print("Graph G size is "+str(len(G.nodes)))
-
+    path_list = ['top.wrapper_norm_corr_20+wrapper_norm_corr_20_inst_p.wrapper_corr_20+corr_20_inst.corr+inst_corr_17^FF_NODE~3537', 'n56448_1', 'n56455', 'n56462_1', 'n56469', 'n56476', 'top.wrapper_norm_corr_20+wrapper_norm_corr_20_inst_p.wrapper_corr_20+corr_20_inst.corr+inst_corr_17^FF_NODE~3579']
+    print("Is path "+str(nx.is_simple_path(G, path_list)))
+    dist = 0
+    for i in range(len(path_list)-1):
+        cur_dist = distance_in_graph(G,path_list[i],path_list[i+1])
+        dist += cur_dist
+        print(path_list[i]+" "+path_list[i+1]+" distance is "+str(cur_dist))
+    print(str(dist)+" is that path distance")
     longest_path = nx.dag_longest_path(G)
     print("Longest path in original graph is " + str(longest_path))
     for v in longest_path:
@@ -483,4 +520,5 @@ if __name__ == '__main__':
     if len(sys.argv)==4:
         blob_parser(sys.argv[1],sys.argv[2],sys.argv[3])
     else:
-        blob_parser('/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.net','/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.place')
+        print("Starting")
+        blob_parser_default('/home/ramanath/ref_zips/ref_arch_complete_stereovision1/stereovision1.net','/home/ramanath/ref_zips/ref_arch_complete_stereovision1/stereovision1.place')

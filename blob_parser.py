@@ -472,4 +472,4 @@ def blob_parser(net_file,place_file):
 
 
 if __name__ == '__main__':
-    blob_parser('/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.net','/home/ramanath/all_files/ref_zips/ref_arch_complete_mkSMAdapter4B/mkSMAdapter4B.place')
+    blob_parser('/home/ramanath/Desktop/varun/blob/blob_merge_prepacked.net','/home/ramanath/Desktop/varun/blob/blob_merge_prepacked.place')
